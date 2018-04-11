@@ -1,4 +1,5 @@
 import numpy as np
+np.set_printoptions(threshold=np.nan)
 
 def binarise_saliency_map(saliency_map,method='adaptive', threshold=0.5, adaptive_factor=2.0):
 
@@ -13,11 +14,14 @@ def binarise_saliency_map(saliency_map,method='adaptive', threshold=0.5, adaptiv
 		return None
 
 	if method == 'fixed':
-		return (saliency_map > threshold)
+		saliency_map = saliency_map / 255.0
+		return np.where(saliency_map > threshold, 1, 0)
 
 	elif method == 'adaptive':
 		adaptive_threshold = adaptive_factor * saliency_map.mean()
-		return (saliency_map > adaptive_threshold)
+		saliency_map = saliency_map / 255.0
+		#print(saliency_map)
+		return np.where(saliency_map > adaptive_threshold, 1, 0)
 
 	elif method == 'clustering':
 		print('Not yet implemented')
