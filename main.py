@@ -23,7 +23,7 @@ import pyimgsaliency as psal
 
 my_dpi = 1200
 
-def display_saliency(filename, sal_types, showfig=True):
+def display_saliency(filename, sal_types, save_fig=False):
 
     types = sal_types.keys()
     print(types)
@@ -32,65 +32,50 @@ def display_saliency(filename, sal_types, showfig=True):
         print("Specify a proper saliency technique.")
 
     if 'mfd' in types:
-        #thresh = 0.5
         mfd = psal.get_saliency_mbd(filename).astype('uint8')
         plt.subplot(121)
         plt.imshow(mfd, cmap=cm.gray, interpolation=None)
         plt.title('MFD Saliency Map')
-        ##plt.show()
         binary_sal_mfd = psal.binarise_saliency_map(mfd,
                                                     method = 'fixed',
                                                     threshold=sal_types['mfd'])
         plt.subplot(122)
         plt.imshow(binary_sal_mfd, cmap=cm.gray, interpolation=None)
         plt.title('MFD Binary Mask: ' + str(sal_types['mfd']))
+        if save_fig:
+            plt.savefig("Manifold-Ranking.png", dpi=my_dpi)
         plt.show()
-        # if showfig:
-        #     plt.show()
-        # else:
-        #     plt.savefig("Manifold-Ranking.png", dpi=my_dpi)
 
     if 'mbd' in types:
-        #thresh = 0.05
         mbd = psal.get_saliency_mbd(filename).astype('uint8')
         plt.subplot(121)
         plt.imshow(mbd, cmap=cm.gray, interpolation=None)
         plt.title('MBD Saliency Map')
-        ##plt.show()
         binary_sal_mbd = psal.binarise_saliency_map(mbd, 
                                                     method='fixed', 
                                                     threshold=sal_types['mbd'])
         plt.subplot(122)
         plt.imshow(binary_sal_mbd, cmap=cm.gray, interpolation=None)
         plt.title('MBD Binary Mask: ' + str(sal_types['mbd']))
+        if save_fig:
+            plt.savefig("MBD.png", dpi=my_dpi)
         plt.show()
-        # if showfig:
-        #     plt.show()
-        # else:
-        #     plt.savefig("MBD.png", dpi=my_dpi)
 
     if 'rbd' in types:
-        #thresh = 0.7
         rbd = psal.get_saliency_rbd(filename).astype('uint8')
-        # print("Unnormalized:\n", rbd) # Unnormalized saliency map
-        #rbd = feature.canny(rbd, sigma=3)
-        #plt.imshow(rbd, cmap=cm.gray, interpolation=None)
-        #plt.show()
+        _ = canny_edge(rbd)
         plt.subplot(121)
         plt.imshow(rbd, cmap=cm.gray, interpolation=None)
         plt.title('RBD Saliency Map')
-        ##plt.show()
         binary_sal_rbd = psal.binarise_saliency_map(rbd, 
                                                     method='fixed', 
                                                     threshold=sal_types['rbd'])
         plt.subplot(122)
         plt.imshow(binary_sal_rbd, cmap=cm.gray, interpolation=None)
         plt.title('RBD Binary Mask: ' + str(sal_types['rbd']))
+        if save_fig:
+            plt.savefig("RobustBackgroundDetection.png", dpi=my_dpi)
         plt.show()
-        # if showfig:
-        #     plt.show()
-        # else:
-        #     plt.savefig("RobustBackgroundDetection.png", dpi=my_dpi)
 
     if 'ft' in types:
         #thresh = 0.5
@@ -98,19 +83,21 @@ def display_saliency(filename, sal_types, showfig=True):
         plt.subplot(121)
         plt.imshow(ftu)
         plt.title('FT Saliency Map')
-        ##plt.show()
         binary_sal_ftu = psal.binarise_saliency_map(ftu, 
                                                     method='fixed',
                                                     threshold=sal_types['ft'])
         plt.subplot(122)
         plt.imshow(binary_sal_ftu, cmap=cm.gray, interpolation=None)
         plt.title('FT Binary Mask: ' + str(sal_types['ft']))
+        if save_fig:
+            plt.savefig("FrequencyTuning.png", dpi=my_dpi)
         plt.show()
-        # if showfig:
-        #     plt.show()
-        # else:
-        #     plt.savefig("FrequencyTuning.png", dpi=my_dpi)
 
+def canny_edge(image):
+    edges = feature.canny(image, sigma=3)
+    plt.imshow(edges, cmap=cm.gray, interpolation=None)
+    plt.show()
+    return edges
 
 def extract_roi(image, bbox):
     print("\nEXTRACTING RoI ... ", end="")
@@ -140,14 +127,16 @@ def modify_roi(bbox, factor=10.0):
 def draw_bbox(image, bbox, title='RoI', color=(0, 255, 0)):
     x, y = bbox[0:2]
     w, h = x + bbox[2], y + bbox[3]
-    temp = np.copy(image)
-    plt.imshow(cv2.rectangle(temp, (x, y), (w, h), color, 2))
+    boxed = np.copy(image)
+    plt.imshow(cv2.rectangle(boxed, (x, y), (w, h), color, 2))
     plt.title(title)
-    return temp
+    return boxed
 
 def save_image2disk(image, filename):
     image = Image.fromarray(image)
     image.save(filename)
+
+
 
 # Original image files
 filenames = ("COCO_train2014_000000349201.jpg", 
@@ -160,14 +149,19 @@ mod_factor = 50.0
 # For GTs to be created
 ground_truth = OD()
 
-# BB DATA
-# BB DATA FORMAT: (x, y, width, height)
+# +++++++++++ Bounding Box DATA +++++++++++++++++++++++++ #
+# BBox DATA FORMAT: (x, y, width, height)
 imgs_bb_data = OD()
+
+
 imgs_bb_data[filenames[0]] = OD()
 imgs_bb_data[filenames[0]]['1'] = [240, 213, 85, 60]
 #imgs_bb_data[filenames[0]]['2'] = [440, 305, 66, 86]
+
 imgs_bb_data[filenames[1]] = OD()
 imgs_bb_data[filenames[1]]['1'] = [160, 148, 200, 460]
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 # Load image from disk
 images = []
@@ -201,6 +195,7 @@ for i, (name, anns) in enumerate(imgs_bb_data.items()):
         roi_file = output_dir + "roi_" + name
         save_image2disk(ground_truth[box_key], roi_file)
         display_saliency(roi_file, {'mbd':0.1, 'rbd':0.4})
+
     # ++++ Modify RoI ++++ #
     for j, bbox in anns.items():
         bbox = modify_roi(bbox, mod_factor)
@@ -219,3 +214,4 @@ for i, (name, anns) in enumerate(imgs_bb_data.items()):
         roi_mod_file = output_dir + "roi_mod_" + name
         save_image2disk(ground_truth[box_key], roi_mod_file)
         display_saliency(roi_mod_file, {'mbd':0.1, 'rbd':0.4})
+

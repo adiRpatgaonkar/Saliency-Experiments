@@ -1,0 +1,7 @@
+**/*.pyc
+
+**/*.db
+
+**/pyimgsaliency-1/
+
+**/mr_saliency/
