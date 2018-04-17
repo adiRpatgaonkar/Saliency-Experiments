@@ -32,10 +32,13 @@ def display_saliency(filename, sal_types, save_fig=False):
         print("Specify a proper saliency technique.")
 
     if 'mfd' in types:
-        mfd = psal.get_saliency_mbd(filename).astype('uint8')
+        mr = MR.MR_saliency()
+        mfd = mr.saliency(filename).astype('uint8')
+        print(mfd)
         plt.subplot(121)
         plt.imshow(mfd, cmap=cm.gray, interpolation=None)
         plt.title('MFD Saliency Map')
+        print("MR Saliency")
         binary_sal_mfd = psal.binarise_saliency_map(mfd,
                                                     method = 'fixed',
                                                     threshold=sal_types['mfd'])
@@ -63,11 +66,10 @@ def display_saliency(filename, sal_types, save_fig=False):
 
     if 'rbd' in types:
         rbd = psal.get_saliency_rbd(filename).astype('uint8')
-        _ = canny_edge(rbd)
         plt.subplot(121)
         plt.imshow(rbd, cmap=cm.gray, interpolation=None)
         plt.title('RBD Saliency Map')
-        binary_sal_rbd = psal.binarise_saliency_map(rbd, 
+        binary_sal_rbd = psal.binarise_saliency_map(rbd,
                                                     method='fixed', 
                                                     threshold=sal_types['rbd'])
         plt.subplot(122)
@@ -78,7 +80,6 @@ def display_saliency(filename, sal_types, save_fig=False):
         plt.show()
 
     if 'ft' in types:
-        #thresh = 0.5
         ftu = psal.get_saliency_ft(filename).astype('uint8')
         plt.subplot(121)
         plt.imshow(ftu)
@@ -94,9 +95,7 @@ def display_saliency(filename, sal_types, save_fig=False):
         plt.show()
 
 def canny_edge(image):
-    edges = feature.canny(image, sigma=3)
-    plt.imshow(edges, cmap=cm.gray, interpolation=None)
-    plt.show()
+    edges = feature.canny(image, sigma=1)
     return edges
 
 def extract_roi(image, bbox):
@@ -145,7 +144,8 @@ output_dir = "outputs/"
 if not os.path.exists(output_dir):
     call("mkdir " + output_dir[:-1])
 
-mod_factor = 50.0
+# Expansion of RoI
+expansion_factor = 50.0
 # For GTs to be created
 ground_truth = OD()
 
@@ -155,12 +155,16 @@ imgs_bb_data = OD()
 
 
 imgs_bb_data[filenames[0]] = OD()
-imgs_bb_data[filenames[0]]['1'] = [240, 213, 85, 60]
+imgs_bb_data[filenames[0]]['0'] = [240, 213, 85, 60]
 #imgs_bb_data[filenames[0]]['2'] = [440, 305, 66, 86]
 
 imgs_bb_data[filenames[1]] = OD()
-imgs_bb_data[filenames[1]]['1'] = [160, 148, 200, 460]
-
+imgs_bb_data[filenames[1]]['0'] = [160, 148, 200, 460]
+print("\n" + "-" * 50 + "\n\n" + "DATA:\n")
+for key in imgs_bb_data.keys():
+    print(key + ":")
+    for box, cord in imgs_bb_data[key].items():
+        print("\tBox {}: {}".format(box, cord))
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 # Load image from disk
@@ -177,7 +181,6 @@ for i, file in enumerate(filenames):
     # display_saliency(file)
 
 # ++++ Saliency for RoIs ++++ #
-print(imgs_bb_data.items())
 for i, (name, anns) in enumerate(imgs_bb_data.items()):
     print("\n" + "-" * 50)
     print("\nImage: {}".format(name))
@@ -198,7 +201,7 @@ for i, (name, anns) in enumerate(imgs_bb_data.items()):
 
     # ++++ Modify RoI ++++ #
     for j, bbox in anns.items():
-        bbox = modify_roi(bbox, mod_factor)
+        bbox = modify_roi(bbox, expansion_factor)
      
     for j, bbox in anns.items():
         # Extract modified RoI
@@ -209,7 +212,7 @@ for i, (name, anns) in enumerate(imgs_bb_data.items()):
         draw_bbox(images[i], bbox, title="Original: Expanded RoI", color=(255, 0, 0))
         plt.subplot(122)
         plt.imshow(ground_truth[box_key])
-        plt.title('Expanded BBox: ' + str(mod_factor) + " %")
+        plt.title('Expanded BBox: ' + str(expansion_factor) + " %")
         plt.show()
         roi_mod_file = output_dir + "roi_mod_" + name
         save_image2disk(ground_truth[box_key], roi_mod_file)
