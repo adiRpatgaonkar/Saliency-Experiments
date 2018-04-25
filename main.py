@@ -27,24 +27,22 @@ def display_saliency(filename, sal_types, save_fig=False):
 
     types = sal_types.keys()
     print(types)
-    if (not 'mfd' in types and not 'mbd' in types and
+    if (not 'mfr' in types and not 'mbd' in types and
         not 'rbd' in types and not 'ft' in types):
         print("Specify a proper saliency technique.")
 
-    if 'mfd' in types:
+    if 'mfr' in types:
         mr = MR.MR_saliency()
-        mfd = mr.saliency(filename).astype('uint8')
-        print(mfd)
+        mfr = mr.saliency(filename).astype('uint8')
         plt.subplot(121)
-        plt.imshow(mfd, cmap=cm.gray, interpolation=None)
-        plt.title('MFD Saliency Map')
-        print("MR Saliency")
-        binary_sal_mfd = psal.binarise_saliency_map(mfd,
+        plt.imshow(mfr, cmap=cm.gray, interpolation=None)
+        plt.title('MFR Saliency Map')
+        binary_sal_mfr = psal.binarise_saliency_map(mfr,
                                                     method = 'fixed',
-                                                    threshold=sal_types['mfd'])
+                                                    threshold=sal_types['mfr'])
         plt.subplot(122)
-        plt.imshow(binary_sal_mfd, cmap=cm.gray, interpolation=None)
-        plt.title('MFD Binary Mask: ' + str(sal_types['mfd']))
+        plt.imshow(binary_sal_mfr, cmap=cm.gray, interpolation=None)
+        plt.title('MFR Binary Mask: ' + str(sal_types['mfr']))
         if save_fig:
             plt.savefig("Manifold-Ranking.png", dpi=my_dpi)
         plt.show()
@@ -138,14 +136,16 @@ def save_image2disk(image, filename):
 
 
 # Original image files
-filenames = ("COCO_train2014_000000349201.jpg", 
+data_dir = "images/"
+filenames = ("DUT-OMRON_1.jpg",
+             "DUT-OMRON_0.jpg", 
              "COCO_train2014_000000349267.jpg")
 output_dir = "outputs/"
 if not os.path.exists(output_dir):
     call("mkdir " + output_dir[:-1])
 
 # Expansion of RoI
-expansion_factor = 50.0
+expansion_factor = 20.0
 # For GTs to be created
 ground_truth = OD()
 
@@ -153,13 +153,15 @@ ground_truth = OD()
 # BBox DATA FORMAT: (x, y, width, height)
 imgs_bb_data = OD()
 
-
 imgs_bb_data[filenames[0]] = OD()
-imgs_bb_data[filenames[0]]['0'] = [240, 213, 85, 60]
-#imgs_bb_data[filenames[0]]['2'] = [440, 305, 66, 86]
+imgs_bb_data[filenames[0]]['0'] = [116, 37, 250, 250]
 
 imgs_bb_data[filenames[1]] = OD()
-imgs_bb_data[filenames[1]]['0'] = [160, 148, 200, 460]
+imgs_bb_data[filenames[1]]['0'] = [116, 37, 250, 250]
+
+imgs_bb_data[filenames[2]] = OD()
+imgs_bb_data[filenames[2]]['0'] = [160, 148, 200, 460]
+
 print("\n" + "-" * 50 + "\n\n" + "DATA:\n")
 for key in imgs_bb_data.keys():
     print(key + ":")
@@ -167,18 +169,17 @@ for key in imgs_bb_data.keys():
         print("\tBox {}: {}".format(box, cord))
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-# Load image from disk
+# ++++ Load image from disk ++++ #
 images = []
 
- # ++++ Saliency for whole image ++++ #
 for i, file in enumerate(filenames):
     # Read all images and append them to a list
-    image = cv2.imread(file)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = np.array(Image.open(data_dir + file))
     images.append(image)
+    # ++++ Saliency for whole image ++++ #
     # plt.imshow(image)
     # plt.show()
-    # display_saliency(file)
+    # display_saliency(data_dir + file, {'mbd':0.1, 'rbd':0.4})
 
 # ++++ Saliency for RoIs ++++ #
 for i, (name, anns) in enumerate(imgs_bb_data.items()):
